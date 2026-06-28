@@ -21,14 +21,14 @@
 	<key>CFBundleVersion</key>
 	<string>1</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Pocket Price Reader uses the camera to read foreign price tags and convert them to your home currency. Conversion also works offline in Type mode.</string>
+	<string>Petal reads price tags through the camera and converts them on the spot. Nothing is saved or sent anywhere. Type mode works without it.</string>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>
 		<string></string>
 	</dict>
 	<key>UIStatusBarStyle</key>
-	<string>UIStatusBarStyleLightContent</string>
+	<string>UIStatusBarStyleDarkContent</string>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>

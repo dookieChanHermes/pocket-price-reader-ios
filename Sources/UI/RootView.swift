@@ -2,25 +2,28 @@ import SwiftUI
 
 enum Mode { case scan, type }
 
-/// Reads an optional UI-test launch environment override (only set by automated
-/// launches; never present in normal use).
 private func uiTestEnv(_ key: String) -> String? {
     ProcessInfo.processInfo.environment[key]
 }
 
-/// Top-level: mode + read currency + up to 3 persisted "show" currencies, rate
-/// bootstrap, bottom panel. State lives here and flows down (spec §5).
+/// Top-level: mode + read currency + an ordered, reorderable list of up to 3 "show"
+/// currencies (persisted), rate bootstrap, and the cute bottom panel. State lives here
+/// and flows down (spec §5).
 struct RootView: View {
     @State private var mode: Mode = Self.initialMode
     @StateObject private var rates = RatesStore.shared
 
-    // Persisted selections (FR: "pre-select up to 3 ... and persist").
-    @AppStorage("readCode") private var readCode: String = "JPY"   // read/scan currency (FR-3)
-    @AppStorage("show1") private var show1: String = "USD"          // primary (required)
-    @AppStorage("show2") private var show2: String = ""            // optional
-    @AppStorage("show3") private var show3: String = ""            // optional
+    @AppStorage("readCode") private var readCode: String = "JPY"   // FR-3
+    @AppStorage("showOrder") private var showOrder: String = "USD" // ordered show list
 
-    private var showCodes: [String] { [show1, show2, show3] }
+    private var showCodes: [String] { ShowList.deserialize(showOrder) }
+
+    private var showBinding: Binding<[String]> {
+        Binding(
+            get: { ShowList.deserialize(showOrder) },
+            set: { showOrder = ShowList.serialize(ShowList.sanitize($0)) }
+        )
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -31,13 +34,18 @@ struct RootView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .ignoresSafeArea(.container, edges: .top)
 
             bottomPanel
         }
-        .background(Color.black.ignoresSafeArea())
+        .background(Tokens.panelBg.ignoresSafeArea())
+        // Light app appearance (the panel/Type are light); status bar is forced to dark
+        // content in Info.plist so the clock/battery read on the light UI and typical feeds.
+        .preferredColorScheme(.light)
         .task {
+            migrateAndNormalizeShowOrder()
             applyUITestOverrides()
-            rates.loadCached()      // FR-5: cache → (rendered) → live refresh → re-render
+            rates.loadCached()
             await rates.refresh()
         }
     }
@@ -46,42 +54,61 @@ struct RootView: View {
         uiTestEnv("PPR_UITEST_MODE") == "type" ? .type : .scan
     }
 
+    /// One-time migration from the v1.1 per-slot keys (show1/show2/show3) to the v1.2
+    /// ordered "showOrder", and canonicalize the stored string so it always matches the
+    /// displayed (sanitized) list.
+    private func migrateAndNormalizeShowOrder() {
+        let d = UserDefaults.standard
+        if d.string(forKey: "showOrder") == nil {
+            let legacy = ["show1", "show2", "show3"]
+                .compactMap { d.string(forKey: $0) }
+                .filter { !$0.isEmpty }
+            if !legacy.isEmpty {
+                showOrder = ShowList.serialize(ShowList.sanitize(legacy))
+            }
+        } else {
+            showOrder = ShowList.serialize(ShowList.deserialize(showOrder))
+        }
+    }
+
     private func applyUITestOverrides() {
         if let r = uiTestEnv("PPR_UITEST_READ") { readCode = r }
-        if let s = uiTestEnv("PPR_UITEST_SHOW1") { show1 = s }
-        if let s = uiTestEnv("PPR_UITEST_SHOW2") { show2 = s }
-        if let s = uiTestEnv("PPR_UITEST_SHOW3") { show3 = s }
+        if let s = uiTestEnv("PPR_UITEST_SHOW") { showOrder = ShowList.serialize(ShowList.deserialize(s)) }
     }
 
     private var bottomPanel: some View {
-        VStack(spacing: 12) {
-            HStack(spacing: 6) {
-                ModeButton(label: "📷 Scan", on: mode == .scan) { mode = .scan }
-                ModeButton(label: "⌨️ Type", on: mode == .type) { mode = .type }
+        VStack(spacing: 14) {
+            HStack(spacing: 8) {
+                ModeButton(label: Copy.scanMode, on: mode == .scan) { mode = .scan }
+                ModeButton(label: Copy.typeMode, on: mode == .type) { mode = .type }
             }
 
-            // Read currency (drives OCR).
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Reading").font(.system(size: 11)).foregroundColor(Tokens.paperFaint)
+            VStack(alignment: .leading, spacing: 6) {
+                sectionLabel(Copy.readingLabel)
                 ReadSegment(value: $readCode)
             }
 
-            // Up to 3 "show" currencies (persisted).
-            HStack(alignment: .top, spacing: 8) {
-                CurrencyMenu(caption: "Primary", code: $show1, allowNone: false)
-                CurrencyMenu(caption: "2nd", code: $show2, allowNone: true)
-                CurrencyMenu(caption: "3rd", code: $show3, allowNone: true)
+            VStack(alignment: .leading, spacing: 6) {
+                sectionLabel(Copy.showLabel)
+                ShowCurrencyList(show: showBinding)
             }
 
             Text("rates: \(rates.source)")
-                .font(.system(size: 11))
-                .foregroundColor(Tokens.paperFaint)
+                .font(.petal(11))
+                .foregroundColor(Tokens.textDim)
                 .frame(maxWidth: .infinity)
                 .multilineTextAlignment(.center)
         }
         .padding(16)
-        .background(Tokens.ink)
+        .background(Tokens.panelBg)
         .overlay(Rectangle().frame(height: 1).foregroundColor(Tokens.line), alignment: .top)
+    }
+
+    private func sectionLabel(_ text: String) -> some View {
+        Text(text)
+            .font(.petal(12))
+            .tracking(0.4)
+            .foregroundColor(Tokens.textDim)
     }
 }
 
@@ -93,13 +120,12 @@ private struct ModeButton: View {
     var body: some View {
         Button(action: action) {
             Text(label)
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundColor(on ? Tokens.paper : Tokens.paperDim)
-                .frame(maxWidth: .infinity, minHeight: 44)
-                .padding(.vertical, 4)
-                .background(Tokens.inkSoft)
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(on ? Tokens.amber : Tokens.line, lineWidth: 1))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+                .font(.petal(15, .medium))
+                .foregroundColor(on ? Tokens.onPrimary : Tokens.textDim)
+                .frame(maxWidth: .infinity, minHeight: 46)
+                .background(on ? Tokens.primary : Tokens.surface)
+                .overlay(RoundedRectangle(cornerRadius: 14).stroke(on ? Color.clear : Tokens.line, lineWidth: 1))
+                .clipShape(RoundedRectangle(cornerRadius: 14))
         }
     }
 }

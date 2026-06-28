@@ -28,10 +28,9 @@ targets:
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
         NSCameraUsageDescription: >-
-          Pocket Price Reader uses the camera to read foreign price tags and
-          convert them to your home currency. Conversion also works offline in
-          Type mode.
-        UIStatusBarStyle: UIStatusBarStyleLightContent
+          Petal reads price tags through the camera and converts them on the
+          spot. Nothing is saved or sent anywhere. Type mode works without it.
+        UIStatusBarStyle: UIStatusBarStyleDarkContent
         UIViewControllerBasedStatusBarAppearance: false
     settings:
       base:

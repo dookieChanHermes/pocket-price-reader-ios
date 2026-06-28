@@ -40,8 +40,18 @@ enum Currencies {
     static func symbol(_ code: String) -> String {
         all.first { $0.code == code }?.symbol ?? code
     }
-    static func name(_ code: String) -> String {
-        all.first { $0.code == code }?.name ?? code
+
+    /// Flag emoji for a cute touch in the picker / show-list.
+    static func flag(_ code: String) -> String {
+        switch code {
+        case "USD": return "🇺🇸"; case "EUR": return "🇪🇺"; case "GBP": return "🇬🇧"
+        case "JPY": return "🇯🇵"; case "CNY": return "🇨🇳"; case "HKD": return "🇭🇰"
+        case "KRW": return "🇰🇷"; case "TWD": return "🇹🇼"; case "SGD": return "🇸🇬"
+        case "THB": return "🇹🇭"; case "AUD": return "🇦🇺"; case "CAD": return "🇨🇦"
+        case "CHF": return "🇨🇭"; case "NZD": return "🇳🇿"; case "MYR": return "🇲🇾"
+        case "VND": return "🇻🇳"; case "INR": return "🇮🇳"; case "IDR": return "🇮🇩"
+        case "PHP": return "🇵🇭"; case "MXN": return "🇲🇽"; default: return "🏳️"
+        }
     }
 }
 

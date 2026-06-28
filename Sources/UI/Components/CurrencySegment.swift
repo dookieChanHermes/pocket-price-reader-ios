@@ -5,12 +5,7 @@ struct ReadSegment: View {
     @Binding var value: String
 
     private func label(_ code: String) -> String {
-        switch code {
-        case "JPY": return "¥ JPY"
-        case "CNY": return "¥ CNY"
-        case "HKD": return "HK$"
-        default: return code
-        }
+        "\(Currencies.flag(code)) \(code)"
     }
 
     var body: some View {
@@ -19,17 +14,18 @@ struct ReadSegment: View {
                 let on = code == value
                 Button(action: { value = code }) {
                     Text(label(code))
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(on ? Tokens.onAmber : Tokens.paperDim)
-                        .frame(maxWidth: .infinity, minHeight: 44) // ≥44pt target (NFR-4)
-                        .background(on ? Tokens.amber : Color.clear)
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .font(.petal(15, .medium))
+                        .foregroundColor(on ? Tokens.onPrimary : Tokens.textDim)
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .background(on ? Tokens.primary : Color.clear)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
                 }
                 .accessibilityIdentifier("read-\(code)")
             }
         }
         .padding(5)
-        .background(Tokens.inkSoft)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .background(Tokens.surface)
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Tokens.line, lineWidth: 1))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
     }
 }

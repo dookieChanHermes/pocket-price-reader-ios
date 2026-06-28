@@ -4,9 +4,20 @@ Point the phone at a foreign price tag and see it in your home currency, overlai
 on the live camera feed. Manual Type mode is the fallback. **All conversion works
 offline.** Native iOS (SwiftUI), on-device OCR via Apple's **Vision** framework.
 
-Implements the [Pocket Price Reader build spec](SPEC.md) (v1: JPY / CNY / HKD ↔ USD).
-Sibling of the native Android app (`pocket-price-reader-android`); the
-convert / parsePrice / rates logic is ported 1:1.
+Implements the [Pocket Price Reader build spec](SPEC.md). Sibling of the native
+Android app (`pocket-price-reader-android`); the logic is ported 1:1.
+
+## v1.2 — "Petal" redesign
+
+- **Cute kawaii theme** (sakura-blossom mascot "Petal", soft pink palette, rounded
+  font, playful copy) replacing the old dark/amber look. New app icon.
+- **Multi-currency**: pick one *read* currency (JPY/CNY/HKD, drives OCR) and an
+  **ordered, reorderable list of up to 3 *show* currencies** (`Logic/ShowList.swift`,
+  `Components/ShowCurrencyList.swift`) — numbered pill rows, move up/down, add/remove,
+  persisted via `@AppStorage("showOrder")`. Primary (top) shows biggest.
+- Conversion is a USD-based cross-rate `convert(amount, from, to)`; overlay numbers
+  carry a dark halo so they stay legible over any camera feed. (The old Swap control
+  is retired — read→show replaces it.)
 
 ## Stack
 
@@ -54,18 +65,20 @@ xcrun simctl launch "$SIM" com.pocketpricereader
 ```
 Sources/
   PocketPriceReaderApp.swift   @main App
-  Model/Currency.swift         CurrencyCode, symbols, currency→Vision languages (FR-14)
-  Logic/Convert.swift          convert(); inCurrency(); outCurrency() — pure (FR-1)
+  Model/Currency.swift         Currency (code/symbol/name/flag), readCodes, →Vision languages (FR-14)
+  Logic/Convert.swift          convert(_:from:to:); shownConversions() — pure (FR-1)
+  Logic/ShowList.swift         ordered show-list ops: add/remove/move/setAt/serialize
   Logic/ParsePrice.swift       OCR text → Double? — faithful port of spec §7
   Logic/Format.swift           grouped / money number formatting (edge rounding)
   Data/RatesStore.swift        cache load / live refresh / bundled fallback (FR-5..10)
   OCR/PriceScanner.swift        AVCaptureSession + Vision, band ROI + frame-skip (FR-12..16)
-  UI/RootView.swift            mode/currency/direction state; rate bootstrap; bottom panel
+  UI/RootView.swift            mode / read currency / ordered show-list state; rate bootstrap; panel
+  UI/Components/ShowCurrencyList.swift  reorderable show-currency pill rows
   UI/ScannerView.swift         camera preview + permission + scan band + readout
   UI/TypeView.swift            manual numeric entry
   UI/Components/               CurrencySegment, Readout
   UI/Theme.swift               design tokens (§8)
-Tests/                         ParsePriceTests, ConvertTests (reference AC/FR IDs)
+Tests/                         ParsePriceTests, ConvertTests, ShowListTests, FormatTests, RatesTests
 ```
 
 State lives in `RootView` and flows down. `RatesStore` is the only shared singleton
@@ -92,8 +105,8 @@ spec change to make explicitly.
 
 ## Verification status
 
-- 18 unit tests green (`ParsePriceTests` 13, `ConvertTests` 5), each referencing
-  AC/FR IDs.
+- 66 unit tests green across 5 suites (`ParsePriceTests`, `ConvertTests`,
+  `ShowListTests`, `FormatTests`, `RatesTests`), referencing AC/FR IDs.
 - Verified on the iPhone 17 simulator: launch + camera-permission prompt (FR-17),
   graceful "No camera found" fallback (§8), live rate refresh + `rates.v1` source
   label (AC-4 / FR-10), and Type-mode conversion (`1500 → $9.28` at the live rate,

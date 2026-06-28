@@ -35,6 +35,14 @@ final class PriceScanner: NSObject, ObservableObject, AVCaptureVideoDataOutputSa
 
     func setReadCurrency(_ code: String) { readCode = code }
 
+    /// Hide the readout 1.5s after the last successful read even if frames stall
+    /// (covered lens / dark scene) — called by a UI timer (FR-16). Mirrors Android.
+    func clearIfStale() {
+        if detected != nil && Date().timeIntervalSince(lastSeen) > 1.5 {
+            DispatchQueue.main.async { self.detected = nil }
+        }
+    }
+
     /// Request permission if needed, then configure + start (FR-17).
     func start() {
         switch AVCaptureDevice.authorizationStatus(for: .video) {

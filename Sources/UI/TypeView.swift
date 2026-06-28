@@ -6,7 +6,6 @@ struct TypeView: View {
     let readCode: String
     let showCodes: [String]
 
-    // Observe rates so the conversion re-renders when a live refresh lands (FR-5/FR-21).
     @ObservedObject private var rates = RatesStore.shared
     @State private var text: String = ProcessInfo.processInfo.environment["PPR_UITEST_VALUE"] ?? ""
 
@@ -16,34 +15,59 @@ struct TypeView: View {
         VStack(spacing: 26) {
             HStack(spacing: 8) {
                 Text(Currencies.symbol(readCode))
-                    .font(.system(size: 30, weight: .semibold))
-                    .foregroundColor(Tokens.amber)
-                TextField("", text: $text, prompt: Text("0").foregroundColor(Tokens.line))
+                    .font(.petal(30, .medium))
+                    .foregroundColor(Tokens.primary)
+                TextField("", text: $text, prompt: Text("0").foregroundColor(Tokens.textFaint))
                     .keyboardType(.decimalPad)
                     .multilineTextAlignment(.center)
-                    .font(.system(size: 54))
+                    .font(.petal(54, .medium))
                     .monospacedDigit()
-                    .foregroundColor(Tokens.paper)
-                    .tint(Tokens.amber)
+                    .foregroundColor(Tokens.textPrimary)
+                    .tint(Tokens.primary)
                     .onChange(of: text) { _, newValue in
-                        text = newValue.filter { $0.isNumber || $0 == "." }
+                        // ASCII digits only (matches Android's Char.isDigit); rejects ½, ², etc.
+                        text = newValue.filter { ($0.isASCII && $0.isNumber) || $0 == "." }
                     }
             }
             .overlay(Rectangle().frame(height: 2).foregroundColor(Tokens.line), alignment: .bottom)
             .padding(.bottom, 10)
 
             if let v = value {
-                Readout(conversions: shownConversions(amount: v, from: readCode, showCodes: showCodes))
-                Text("\(Currencies.symbol(readCode))\(formatGrouped(v)) \(readCode) at today’s rate")
-                    .font(.system(size: 13))
-                    .foregroundColor(Tokens.paperDim)
+                TypeReadout(conversions: shownConversions(amount: v, from: readCode, showCodes: showCodes))
+                Text("\(Currencies.symbol(readCode))\(formatGrouped(v)) \(readCode) \(Copy.todayRateSuffix)")
+                    .font(.petal(13))
+                    .foregroundColor(Tokens.textDim)
             } else {
-                // FR-19: empty/invalid shows an em dash, no crash.
-                Text("—").font(.system(size: 40, weight: .bold)).foregroundColor(Tokens.paper)
+                Text(Copy.emptyDash).font(.petal(40, .medium)).foregroundColor(Tokens.textFaint)
             }
         }
         .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color(red: 0x0a / 255, green: 0x0c / 255, blue: 0x10 / 255))
+        .background(Tokens.typeBg)
+    }
+}
+
+/// Like Readout but tuned for the light Type screen (dark text, no halo).
+private struct TypeReadout: View {
+    let conversions: [ShownConversion]
+
+    var body: some View {
+        VStack(spacing: 6) {
+            if let primary = conversions.first {
+                (Text(primary.symbol).font(.petal(24, .medium)).foregroundColor(Tokens.primary)
+                    + Text(primary.value).font(.petal(44, .medium)).foregroundColor(Tokens.textPrimary))
+                    .monospacedDigit()
+            }
+            if conversions.count > 1 {
+                HStack(spacing: 18) {
+                    ForEach(conversions.dropFirst()) { c in
+                        (Text(c.symbol).font(.petal(18, .medium)).foregroundColor(Tokens.primary)
+                            + Text(c.value).font(.petal(22, .medium)).foregroundColor(Tokens.textDim))
+                            .monospacedDigit()
+                    }
+                }
+            }
+        }
+        .multilineTextAlignment(.center)
     }
 }

@@ -65,4 +65,23 @@ final class ParsePriceTests: XCTestCase {
     func testPhoneNumber_matchesExactAlgorithmNotAC5() {
         XCTAssertEqual(parsePrice("03-1234-5678"), 1234)
     }
+
+    /// Broad corpus (kept identical to the Android ParsePriceTest corpus so both
+    /// platforms behave the same). Native uses strict Double parsing, so multi-dot
+    /// tokens like "12.34.56" yield nil (documented divergence from the JS reference).
+    func testCorpus() {
+        let cases: [(String?, Double?)] = [
+            ("¥1,500", 1500), ("￥１，５００", 1500), ("1,234,567", 1234567),
+            ("12,5", 12.5), ("12,50", 12.5), ("1,500.00", 1500), ("$99.99", 99.99),
+            ("Aisle 3  ¥980", 980), ("Total 3980 yen", 3980), ("Buy 2 get 1 ¥2980", 2980),
+            ("no price", nil), ("", nil), ("0", nil), ("0.99", nil), ("1", 1),
+            ("99999999", 99999999), ("100000000", nil), ("1980円", 1980), ("１２．５", 12.5),
+            ("￥０", nil), ("100 200", 100), ("3.5", 3.5), ("1000000", 1000000),
+            ("12.34.56", nil), ("abc", nil), ("   ", nil), ("¥1,980 税込", 1980),
+            ("50% off 1280", 1280), ("1,2,3", nil), ("1.5 1500", 1500), ("元 7,12", 7.12),
+        ]
+        for (i, (input, expected)) in cases.enumerated() {
+            XCTAssertEqual(parsePrice(input), expected, "case \(i): \(String(describing: input))")
+        }
+    }
 }
