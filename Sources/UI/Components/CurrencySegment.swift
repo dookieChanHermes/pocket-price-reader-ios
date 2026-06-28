@@ -1,28 +1,31 @@
 import SwiftUI
 
-/// JPY/CNY/HKD selector (FR-20).
-struct CurrencySegment: View {
-    @Binding var value: CurrencyCode
+/// Read-currency selector (the currency on the tag; drives OCR). 3 options (FR-14, FR-20).
+struct ReadSegment: View {
+    @Binding var value: String
 
-    private let items: [(code: CurrencyCode, label: String)] = [
-        (.JPY, "¥ JPY"),
-        (.CNY, "¥ CNY"),
-        (.HKD, "HK$"),
-    ]
+    private func label(_ code: String) -> String {
+        switch code {
+        case "JPY": return "¥ JPY"
+        case "CNY": return "¥ CNY"
+        case "HKD": return "HK$"
+        default: return code
+        }
+    }
 
     var body: some View {
         HStack(spacing: 6) {
-            ForEach(items, id: \.code) { item in
-                let on = item.code == value
-                Button(action: { value = item.code }) {
-                    Text(item.label)
+            ForEach(Currencies.readCodes, id: \.self) { code in
+                let on = code == value
+                Button(action: { value = code }) {
+                    Text(label(code))
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundColor(on ? Tokens.onAmber : Tokens.paperDim)
                         .frame(maxWidth: .infinity, minHeight: 44) // ≥44pt target (NFR-4)
                         .background(on ? Tokens.amber : Color.clear)
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                 }
-                .accessibilityIdentifier(item.code.rawValue)
+                .accessibilityIdentifier("read-\(code)")
             }
         }
         .padding(5)

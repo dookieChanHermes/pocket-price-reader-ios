@@ -31,9 +31,9 @@ final class PriceScanner: NSObject, ObservableObject, AVCaptureVideoDataOutputSa
     private var frameCount = 0
     private var processing = false
     private var lastSeen = Date.distantPast
-    private var currency: CurrencyCode = .JPY
+    private var readCode: String = "JPY"
 
-    func setCurrency(_ cur: CurrencyCode) { currency = cur }
+    func setReadCurrency(_ code: String) { readCode = code }
 
     /// Request permission if needed, then configure + start (FR-17).
     func start() {
@@ -105,7 +105,7 @@ final class PriceScanner: NSObject, ObservableObject, AVCaptureVideoDataOutputSa
         }
         request.recognitionLevel = .accurate
         request.usesLanguageCorrection = false           // numbers, not prose
-        request.recognitionLanguages = recognitionLanguages(for: currency)
+        request.recognitionLanguages = recognitionLanguages(forRead: readCode)
         request.regionOfInterest = regionOfInterest
 
         // Back camera in portrait: rotate the buffer upright for recognition.

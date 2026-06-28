@@ -8,20 +8,26 @@ private func uiTestEnv(_ key: String) -> String? {
     ProcessInfo.processInfo.environment[key]
 }
 
-/// Top-level: mode / currency / direction state, rate bootstrap, bottom panel.
-/// State lives here and flows down (spec §5).
+/// Top-level: mode + read currency + up to 3 persisted "show" currencies, rate
+/// bootstrap, bottom panel. State lives here and flows down (spec §5).
 struct RootView: View {
     @State private var mode: Mode = Self.initialMode
-    @State private var cur: CurrencyCode = .JPY        // FR-3 default JPY
-    @State private var foreignToUsd: Bool = true        // FR-2 default
     @StateObject private var rates = RatesStore.shared
+
+    // Persisted selections (FR: "pre-select up to 3 ... and persist").
+    @AppStorage("readCode") private var readCode: String = "JPY"   // read/scan currency (FR-3)
+    @AppStorage("show1") private var show1: String = "USD"          // primary (required)
+    @AppStorage("show2") private var show2: String = ""            // optional
+    @AppStorage("show3") private var show3: String = ""            // optional
+
+    private var showCodes: [String] { [show1, show2, show3] }
 
     var body: some View {
         VStack(spacing: 0) {
             ZStack {
                 switch mode {
-                case .scan: ScannerView(cur: cur, foreignToUsd: foreignToUsd)
-                case .type: TypeView(cur: cur, foreignToUsd: foreignToUsd)
+                case .scan: ScannerView(readCode: readCode, showCodes: showCodes)
+                case .type: TypeView(readCode: readCode, showCodes: showCodes)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -30,8 +36,8 @@ struct RootView: View {
         }
         .background(Color.black.ignoresSafeArea())
         .task {
-            // FR-5: load cache → (already rendered) → live refresh → re-render.
-            rates.loadCached()
+            applyUITestOverrides()
+            rates.loadCached()      // FR-5: cache → (rendered) → live refresh → re-render
             await rates.refresh()
         }
     }
@@ -40,37 +46,34 @@ struct RootView: View {
         uiTestEnv("PPR_UITEST_MODE") == "type" ? .type : .scan
     }
 
+    private func applyUITestOverrides() {
+        if let r = uiTestEnv("PPR_UITEST_READ") { readCode = r }
+        if let s = uiTestEnv("PPR_UITEST_SHOW1") { show1 = s }
+        if let s = uiTestEnv("PPR_UITEST_SHOW2") { show2 = s }
+        if let s = uiTestEnv("PPR_UITEST_SHOW3") { show3 = s }
+    }
+
     private var bottomPanel: some View {
         VStack(spacing: 12) {
-            // Mode switch (FR-20).
             HStack(spacing: 6) {
                 ModeButton(label: "📷 Scan", on: mode == .scan) { mode = .scan }
                 ModeButton(label: "⌨️ Type", on: mode == .type) { mode = .type }
             }
 
-            CurrencySegment(value: $cur)
-
-            // Swap + direction label (FR-4).
-            HStack(spacing: 10) {
-                Button(action: { foreignToUsd.toggle() }) {
-                    Text("⇅ Swap")
-                        .font(.system(size: 13))
-                        .foregroundColor(Tokens.paper)
-                        .padding(.horizontal, 12)
-                        .frame(minHeight: 44)
-                        .background(Tokens.inkSoft)
-                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Tokens.line, lineWidth: 1))
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                }
-                Text("\(inCurrency(cur, foreignToUsd: foreignToUsd)) → \(outCurrency(cur, foreignToUsd: foreignToUsd))")
-                    .font(.system(size: 13))
-                    .foregroundColor(Tokens.paperDim)
-                    .frame(maxWidth: .infinity)
-                    .multilineTextAlignment(.center)
+            // Read currency (drives OCR).
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Reading").font(.system(size: 11)).foregroundColor(Tokens.paperFaint)
+                ReadSegment(value: $readCode)
             }
 
-            // Rate meta line (FR-10).
-            Text("1 USD = \(String(format: "%.2f", rates.current.rate(of: cur))) \(cur.rawValue) · rates: \(rates.source)")
+            // Up to 3 "show" currencies (persisted).
+            HStack(alignment: .top, spacing: 8) {
+                CurrencyMenu(caption: "Primary", code: $show1, allowNone: false)
+                CurrencyMenu(caption: "2nd", code: $show2, allowNone: true)
+                CurrencyMenu(caption: "3rd", code: $show3, allowNone: true)
+            }
+
+            Text("rates: \(rates.source)")
                 .font(.system(size: 11))
                 .foregroundColor(Tokens.paperFaint)
                 .frame(maxWidth: .infinity)

@@ -2,11 +2,11 @@ import SwiftUI
 import AVFoundation
 
 /// Scan mode: full-bleed back-camera feed, centered scan band, on-device OCR within
-/// the band, live readout (FR-11..17). The scanner is started on appear and stopped
-/// on disappear (NFR-5 / EC-5).
+/// the band, live multi-currency readout (FR-11..17). The scanner is started on appear
+/// and stopped on disappear (NFR-5 / EC-5).
 struct ScannerView: View {
-    let cur: CurrencyCode
-    let foreignToUsd: Bool
+    let readCode: String
+    let showCodes: [String]
 
     @StateObject private var scanner = PriceScanner()
     // Observe rates so the readout re-renders when a live refresh lands (FR-5/FR-21).
@@ -16,11 +16,11 @@ struct ScannerView: View {
     var body: some View {
         content
             .onAppear {
-                scanner.setCurrency(cur)
+                scanner.setReadCurrency(readCode)
                 scanner.start()
             }
             .onDisappear { scanner.stop() }
-            .onChange(of: cur) { _, newCur in scanner.setCurrency(newCur) } // EC-4
+            .onChange(of: readCode) { _, newCode in scanner.setReadCurrency(newCode) } // EC-4
             .onChange(of: scenePhase) { _, phase in
                 if phase == .active { scanner.start() } else { scanner.stop() }
             }
@@ -66,22 +66,26 @@ struct ScannerView: View {
                     .frame(width: w, height: h)
 
                 // Scan band (§8): centered, left/right 6%, top 40%, height 20%.
-                // Band center sits at 50% of height (40% + half of 20%).
                 RoundedRectangle(cornerRadius: 14)
                     .stroke(Tokens.amber, lineWidth: 2)
                     .frame(width: w * 0.88, height: h * 0.20)
                     .position(x: w * 0.5, y: h * 0.50)
 
                 if let d = scanner.detected {
-                    let inCur = inCurrency(cur, foreignToUsd: foreignToUsd)
-                    let outCur = outCurrency(cur, foreignToUsd: foreignToUsd)
-                    Readout(
-                        detectedLabel: "\(symbol(of: inCur))\(formatGrouped(d)) \(inCur)",
-                        outSymbol: symbol(of: outCur),
-                        outValue: formatMoney(convert(d, cur, foreignToUsd: foreignToUsd))
-                    )
-                    .frame(width: w)
-                    .position(x: w * 0.5, y: h * 0.33)
+                    // Detected price (read currency) sits just above the band…
+                    Text("\(Currencies.symbol(readCode))\(formatGrouped(d)) \(readCode)")
+                        .font(.system(size: 15))
+                        .tracking(0.5)
+                        .foregroundColor(Tokens.paperDim)
+                        .monospacedDigit()
+                        .shadow(color: Color.black.opacity(0.9), radius: 5, x: 0, y: 1)
+                        .frame(width: w)
+                        .position(x: w * 0.5, y: h * 0.355)
+
+                    // …and the conversions drop into the dead space below the band.
+                    Readout(conversions: shownConversions(amount: d, from: readCode, showCodes: showCodes))
+                        .frame(width: w)
+                        .position(x: w * 0.5, y: h * 0.72)
                 }
 
                 Text("Point the band at a price")

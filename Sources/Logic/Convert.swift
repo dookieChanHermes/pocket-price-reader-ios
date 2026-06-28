@@ -1,18 +1,34 @@
 import Foundation
 
-/// Direction-aware conversion (FR-1). Reads the current rate table (RatesStore).
-/// `foreignToUsd` true  -> amount / rate  (read a foreign price, show USD)
-/// `foreignToUsd` false -> amount * rate  (show a USD amount in the foreign currency)
-/// No rounding here — format at the edge (spec §7).
-func convert(_ amount: Double, _ cur: CurrencyCode, foreignToUsd: Bool) -> Double {
-    let rate = RatesStore.shared.current.rate(of: cur) // 1 USD = rate foreign
-    return foreignToUsd ? amount / rate : amount * rate
+/// Cross-rate conversion (FR-1, generalized). Rates are USD-based (1 USD = rate[code]),
+/// so `amount` of `from` in `to` is `amount / rate[from] * rate[to]`. Pure given the
+/// current rate table. No rounding here — format at the edge (spec §7).
+func convert(_ amount: Double, from: String, to: String) -> Double {
+    let rates = RatesStore.shared.current
+    let rFrom = rates.rate(of: from)
+    let rTo = rates.rate(of: to)
+    guard rFrom > 0 else { return 0 }
+    return amount / rFrom * rTo
 }
 
-func inCurrency(_ cur: CurrencyCode, foreignToUsd: Bool) -> String {
-    foreignToUsd ? cur.rawValue : "USD"
+/// One displayed conversion (symbol + formatted value).
+struct ShownConversion: Identifiable {
+    let code: String
+    let symbol: String
+    let value: String
+    var id: String { code }
 }
 
-func outCurrency(_ cur: CurrencyCode, foreignToUsd: Bool) -> String {
-    foreignToUsd ? "USD" : cur.rawValue
+/// Build the ordered list of conversions to display (first = primary). Skips empty
+/// (None) slots, so the result has 1–3 entries.
+func shownConversions(amount: Double, from readCode: String, showCodes: [String]) -> [ShownConversion] {
+    showCodes
+        .filter { !$0.isEmpty }
+        .map { code in
+            ShownConversion(
+                code: code,
+                symbol: Currencies.symbol(code),
+                value: formatMoney(convert(amount, from: readCode, to: code))
+            )
+        }
 }

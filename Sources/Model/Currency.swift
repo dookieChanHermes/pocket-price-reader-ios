@@ -1,29 +1,66 @@
 import Foundation
 
-/// The three supported foreign currencies (v1).
-enum CurrencyCode: String, CaseIterable, Identifiable {
-    case JPY, CNY, HKD
-    var id: String { rawValue }
+/// A supported currency: ISO code, display symbol, human name.
+struct Currency: Identifiable, Hashable {
+    let code: String
+    let symbol: String
+    let name: String
+    var id: String { code }
 }
 
-/// Currency symbols for display (spec theme.ts SYMBOL).
-func symbol(of code: String) -> String {
-    switch code {
-    case "USD": return "$"
-    case "JPY": return "¥"
-    case "CNY": return "¥"
-    case "HKD": return "HK$"
-    default: return ""
+/// Curated travel currency list. The rate API (USD-based) covers all of these,
+/// so any can be a "show" currency; conversion is a cross-rate.
+enum Currencies {
+    static let all: [Currency] = [
+        Currency(code: "USD", symbol: "$",    name: "US Dollar"),
+        Currency(code: "EUR", symbol: "€",    name: "Euro"),
+        Currency(code: "GBP", symbol: "£",    name: "British Pound"),
+        Currency(code: "JPY", symbol: "¥",    name: "Japanese Yen"),
+        Currency(code: "CNY", symbol: "¥",    name: "Chinese Yuan"),
+        Currency(code: "HKD", symbol: "HK$",  name: "Hong Kong Dollar"),
+        Currency(code: "KRW", symbol: "₩",    name: "Korean Won"),
+        Currency(code: "TWD", symbol: "NT$",  name: "Taiwan Dollar"),
+        Currency(code: "SGD", symbol: "S$",   name: "Singapore Dollar"),
+        Currency(code: "THB", symbol: "฿",    name: "Thai Baht"),
+        Currency(code: "AUD", symbol: "A$",   name: "Australian Dollar"),
+        Currency(code: "CAD", symbol: "C$",   name: "Canadian Dollar"),
+        Currency(code: "CHF", symbol: "Fr",   name: "Swiss Franc"),
+        Currency(code: "NZD", symbol: "NZ$",  name: "New Zealand Dollar"),
+        Currency(code: "MYR", symbol: "RM",   name: "Malaysian Ringgit"),
+        Currency(code: "VND", symbol: "₫",    name: "Vietnamese Dong"),
+        Currency(code: "INR", symbol: "₹",    name: "Indian Rupee"),
+        Currency(code: "IDR", symbol: "Rp",   name: "Indonesian Rupiah"),
+        Currency(code: "PHP", symbol: "₱",    name: "Philippine Peso"),
+        Currency(code: "MXN", symbol: "Mex$", name: "Mexican Peso"),
+    ]
+
+    /// Read (scanned) currencies — limited to those with reliable on-device OCR scripts.
+    static let readCodes = ["JPY", "CNY", "HKD"]
+
+    static func symbol(_ code: String) -> String {
+        all.first { $0.code == code }?.symbol ?? code
+    }
+    static func name(_ code: String) -> String {
+        all.first { $0.code == code }?.name ?? code
     }
 }
 
-/// Vision recognition languages per currency (FR-14). Numerals parse the same across
-/// scripts, but the matching language reads native/full-width digits more reliably.
-/// JPY -> japanese, CNY -> chinese, HKD -> latin.
-func recognitionLanguages(for cur: CurrencyCode) -> [String] {
-    switch cur {
-    case .JPY: return ["ja-JP", "en-US"]
-    case .CNY: return ["zh-Hans", "en-US"]
-    case .HKD: return ["en-US"]
+/// OCR script per read currency (FR-14): JPY→japanese, CNY→chinese, else latin.
+enum OcrScript { case japanese, chinese, latin }
+
+func ocrScript(forRead code: String) -> OcrScript {
+    switch code {
+    case "JPY": return .japanese
+    case "CNY": return .chinese
+    default: return .latin
+    }
+}
+
+/// Vision recognition languages for a read currency (FR-14).
+func recognitionLanguages(forRead code: String) -> [String] {
+    switch code {
+    case "JPY": return ["ja-JP", "en-US"]
+    case "CNY": return ["zh-Hans", "en-US"]
+    default: return ["en-US"]
     }
 }

@@ -1,25 +1,30 @@
 import SwiftUI
 
-/// Camera overlay (FR-15, §8). Line 1 = detected price in input currency (dim).
-/// Line 2 = converted value, 46pt bold, symbol in amber, heavy shadow for legibility
-/// over arbitrary feeds (NFR-4). Shown only when there is a detection (FR-16).
+/// The conversion stack (hierarchy layout, §8): primary big (46pt), then up to two more
+/// in a compact secondary row (22pt) — bigger fonts without blocking the camera (heavy
+/// text shadow, no scrim). Reused by Scan (below the band) and Type modes.
 struct Readout: View {
-    let detectedLabel: String
-    let outSymbol: String
-    let outValue: String
+    let conversions: [ShownConversion]
 
     var body: some View {
-        VStack(spacing: 2) {
-            Text(detectedLabel)
-                .font(.system(size: 15))
-                .tracking(0.5)
-                .foregroundColor(Tokens.paperDim)
-                .monospacedDigit()
+        VStack(spacing: 6) {
+            if let primary = conversions.first {
+                (Text(primary.symbol).font(.system(size: 24, weight: .bold)).foregroundColor(Tokens.amber)
+                    + Text(primary.value).font(.system(size: 46, weight: .bold)).foregroundColor(Tokens.paper))
+                    .monospacedDigit()
+                    .shadow(color: Color.black.opacity(0.9), radius: 7, x: 0, y: 2)
+            }
 
-            (Text(outSymbol).font(.system(size: 24, weight: .bold)).foregroundColor(Tokens.amber)
-                + Text(outValue).font(.system(size: 46, weight: .bold)).foregroundColor(Tokens.paper))
-                .monospacedDigit()
-                .shadow(color: Color.black.opacity(0.9), radius: 7, x: 0, y: 2)
+            if conversions.count > 1 {
+                HStack(spacing: 18) {
+                    ForEach(conversions.dropFirst()) { c in
+                        (Text(c.symbol).font(.system(size: 18, weight: .semibold)).foregroundColor(Tokens.amber)
+                            + Text(c.value).font(.system(size: 22, weight: .semibold)).foregroundColor(Tokens.paper.opacity(0.85)))
+                            .monospacedDigit()
+                            .shadow(color: Color.black.opacity(0.9), radius: 6, x: 0, y: 1)
+                    }
+                }
+            }
         }
         .multilineTextAlignment(.center)
     }
