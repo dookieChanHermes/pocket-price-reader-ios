@@ -27,6 +27,7 @@ targets:
         CFBundleDisplayName: Pocket Price Reader
         UILaunchScreen:
           UIColorName: ""
+        UIRequiresFullScreen: true
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
         NSCameraUsageDescription: >-
@@ -38,6 +39,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.pocketpricereader
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        TARGETED_DEVICE_FAMILY: "1"
 
   PocketPriceReaderTests:
     type: bundle.unit-test
