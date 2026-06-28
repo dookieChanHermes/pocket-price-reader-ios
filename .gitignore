@@ -1,0 +1,14 @@
+# xcodegen generates the project from project.yml — don't track it.
+*.xcodeproj/
+
+# Build output
+build/
+DerivedData/
+.build/
+
+# Xcode user state
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+
+.DS_Store
