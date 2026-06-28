@@ -13,6 +13,10 @@ struct ScannerView: View {
     @ObservedObject private var rates = RatesStore.shared
     @Environment(\.scenePhase) private var scenePhase
 
+    // Tap-to-focus indicator (view-space point + a pulse id to retrigger the animation).
+    @State private var focusPoint: CGPoint?
+    @State private var focusPulse = 0
+
     // Poll to hide the overlay 1.5s after the last read even if frames stall (FR-16).
     private let staleTimer = Timer.publish(every: 0.3, on: .main, in: .common).autoconnect()
 
@@ -63,32 +67,54 @@ struct ScannerView: View {
             let w = geo.size.width
             let h = geo.size.height
             ZStack {
-                CameraPreview(session: scanner.session).frame(width: w, height: h)
-
-                RoundedRectangle(cornerRadius: 18)
-                    .stroke(Tokens.primary, lineWidth: 3)
-                    .frame(width: w * 0.88, height: h * 0.20)
-                    .position(x: w * 0.5, y: h * 0.50)
-
-                if let d = scanner.detected {
-                    OutlinedText.label(
-                        "\(Currencies.symbol(readCode))\(formatGrouped(d)) \(readCode)",
-                        font: .petal(15, .medium), color: Tokens.overlayText, radius: 1.2
-                    )
-                    .frame(width: w)
-                    .position(x: w * 0.5, y: h * 0.355)
-
-                    Readout(conversions: shownConversions(amount: d, from: readCode, showCodes: showCodes))
-                        .frame(width: w)
-                        .position(x: w * 0.5, y: h * 0.72)
+                // Tap anywhere on the feed to focus there, like a camera app.
+                CameraPreview(session: scanner.session) { viewPoint, devicePoint in
+                    scanner.focus(at: devicePoint)
+                    showFocus(at: viewPoint)
                 }
+                .frame(width: w, height: h)
 
-                OutlinedText.label(Copy.hintScan, font: .petal(13), color: Tokens.overlayText, radius: 1)
-                    .position(x: w * 0.5, y: h - 22)
+                // Overlays don't intercept taps, so they reach the camera for focusing.
+                Group {
+                    RoundedRectangle(cornerRadius: 18)
+                        .stroke(Tokens.primary, lineWidth: 3)
+                        .frame(width: w * 0.88, height: h * 0.20)
+                        .position(x: w * 0.5, y: h * 0.50)
+
+                    if let d = scanner.detected {
+                        OutlinedText.label(
+                            "\(Currencies.symbol(readCode))\(formatGrouped(d)) \(readCode)",
+                            font: .petal(15, .medium), color: Tokens.overlayText, radius: 1.2
+                        )
+                        .frame(width: w)
+                        .position(x: w * 0.5, y: h * 0.355)
+
+                        Readout(conversions: shownConversions(amount: d, from: readCode, showCodes: showCodes))
+                            .frame(width: w)
+                            .position(x: w * 0.5, y: h * 0.72)
+                    }
+
+                    OutlinedText.label(Copy.hintScan, font: .petal(13), color: Tokens.overlayText, radius: 1)
+                        .position(x: w * 0.5, y: h - 22)
+                }
+                .allowsHitTesting(false)
+
+                if let fp = focusPoint {
+                    FocusRing().id(focusPulse).position(fp).allowsHitTesting(false)
+                }
             }
         }
         .background(Tokens.appBg)
         .clipped()
+    }
+
+    private func showFocus(at point: CGPoint) {
+        focusPoint = point
+        focusPulse += 1
+        let token = focusPulse
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.9) {
+            if focusPulse == token { focusPoint = nil }
+        }
     }
 
     private func openSettings() {
@@ -112,18 +138,60 @@ private struct Centered<Content: View>: View {
     }
 }
 
-/// SwiftUI host for the AVCaptureVideoPreviewLayer (FR-11 full-bleed feed).
+/// A camera-app style focus square that pops in at the tapped point and fades out.
+private struct FocusRing: View {
+    @State private var scale: CGFloat = 1.35
+    @State private var opacity: Double = 0
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 10)
+            .stroke(Tokens.primary, lineWidth: 2)
+            .frame(width: 76, height: 76)
+            .scaleEffect(scale)
+            .opacity(opacity)
+            .shadow(color: Tokens.halo.opacity(0.6), radius: 3)
+            .onAppear {
+                withAnimation(.spring(response: 0.25, dampingFraction: 0.6)) { scale = 1; opacity = 1 }
+                withAnimation(.easeIn(duration: 0.35).delay(0.5)) { opacity = 0 }
+            }
+    }
+}
+
+/// SwiftUI host for the AVCaptureVideoPreviewLayer (FR-11 full-bleed feed). Reports taps
+/// as (view point, device point) so the caller can focus and show an indicator.
 struct CameraPreview: UIViewRepresentable {
     let session: AVCaptureSession
+    var onFocusTap: ((CGPoint, CGPoint) -> Void)? = nil
+
+    func makeCoordinator() -> Coordinator { Coordinator(onFocusTap: onFocusTap) }
 
     func makeUIView(context: Context) -> PreviewView {
         let view = PreviewView()
         view.videoPreviewLayer.session = session
         view.videoPreviewLayer.videoGravity = .resizeAspectFill
+        context.coordinator.view = view
+        let tap = UITapGestureRecognizer(target: context.coordinator, action: #selector(Coordinator.handleTap(_:)))
+        view.addGestureRecognizer(tap)
         return view
     }
 
-    func updateUIView(_ uiView: PreviewView, context: Context) {}
+    func updateUIView(_ uiView: PreviewView, context: Context) {
+        context.coordinator.onFocusTap = onFocusTap
+    }
+
+    final class Coordinator: NSObject {
+        var onFocusTap: ((CGPoint, CGPoint) -> Void)?
+        weak var view: PreviewView?
+        init(onFocusTap: ((CGPoint, CGPoint) -> Void)?) { self.onFocusTap = onFocusTap }
+
+        @objc func handleTap(_ gesture: UITapGestureRecognizer) {
+            guard let view else { return }
+            let viewPoint = gesture.location(in: view)
+            // Map the tap to the camera's normalised point-of-interest (accounts for aspectFill).
+            let devicePoint = view.videoPreviewLayer.captureDevicePointConverted(fromLayerPoint: viewPoint)
+            onFocusTap?(viewPoint, devicePoint)
+        }
+    }
 
     final class PreviewView: UIView {
         override class var layerClass: AnyClass { AVCaptureVideoPreviewLayer.self }

@@ -22,6 +22,7 @@ final class PriceScanner: NSObject, ObservableObject, AVCaptureVideoDataOutputSa
     let session = AVCaptureSession()
     private let videoOutput = AVCaptureVideoDataOutput()
     private let queue = DispatchQueue(label: "com.pocketpricereader.ocr")
+    private var device: AVCaptureDevice?
 
     // Band region (§8): left 6%, top 40%, width 88%, height 20%.
     // Vision ROI is normalized, origin bottom-left, so y = 1 - (0.40 + 0.20) = 0.40.
@@ -34,6 +35,30 @@ final class PriceScanner: NSObject, ObservableObject, AVCaptureVideoDataOutputSa
     private var readCode: String = "JPY"
 
     func setReadCurrency(_ code: String) { readCode = code }
+
+    /// Tap-to-focus: focus + meter at a normalised device point (0...1, from the preview
+    /// layer). Runs on the camera queue; no-ops if the device doesn't support it.
+    func focus(at point: CGPoint) {
+        queue.async { [weak self] in
+            guard let device = self?.device else { return }
+            do {
+                try device.lockForConfiguration()
+                if device.isFocusPointOfInterestSupported {
+                    device.focusPointOfInterest = point
+                    if device.isFocusModeSupported(.autoFocus) { device.focusMode = .autoFocus }
+                }
+                if device.isExposurePointOfInterestSupported {
+                    device.exposurePointOfInterest = point
+                    if device.isExposureModeSupported(.continuousAutoExposure) {
+                        device.exposureMode = .continuousAutoExposure
+                    }
+                }
+                device.unlockForConfiguration()
+            } catch {
+                // ignore — focusing is best-effort
+            }
+        }
+    }
 
     /// Hide the readout 1.5s after the last successful read even if frames stall
     /// (covered lens / dark scene) — called by a UI timer (FR-16). Mirrors Android.
@@ -76,6 +101,7 @@ final class PriceScanner: NSObject, ObservableObject, AVCaptureVideoDataOutputSa
                     DispatchQueue.main.async { self.state = .noCamera }
                     return
                 }
+                self.device = device
                 self.session.beginConfiguration()
                 self.session.sessionPreset = .hd1280x720
                 self.session.addInput(input)
