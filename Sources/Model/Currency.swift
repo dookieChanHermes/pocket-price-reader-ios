@@ -41,6 +41,12 @@ enum Currencies {
         all.first { $0.code == code }?.name ?? code
     }
 
+    /// Localised currency name for the active language (system-provided), with the
+    /// bundled English name as a fallback. e.g. USD → "米ドル" (ja) / "美元" (zh).
+    static func displayName(_ code: String) -> String {
+        Locale.current.localizedString(forCurrencyCode: code) ?? name(code)
+    }
+
     /// Flag emoji for a cute touch in the picker / show-list.
     static func flag(_ code: String) -> String {
         switch code {

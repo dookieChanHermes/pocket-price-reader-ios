@@ -55,7 +55,7 @@ struct TypeView: View {
         .toolbar {
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
-                Button("Done") { focused = false }
+                Button(Copy.doneButton) { focused = false }
                     .foregroundColor(Tokens.primaryDeep)
             }
         }

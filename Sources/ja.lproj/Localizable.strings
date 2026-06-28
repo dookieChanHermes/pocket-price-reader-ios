@@ -1,0 +1,19 @@
+/* Pocket Price Reader — Japanese */
+
+"scan_mode" = "🌸 タグをスキャン";
+"type_mode" = "手入力";
+"hint_scan" = "値札にカメラを向けて、そのままキープ";
+"perm_title" = "Petal（ペタル）にカメラをのぞかせてね";
+"perm_body" = "Petalが値札をその場で読み取って変換します。保存も送信もいっさいしません。";
+"perm_button" = "カメラをオンにする";
+"no_camera" = "カメラが使えないので、価格を手入力しましょう。";
+"today_rate_suffix" = "本日のレートで";
+"reading_label" = "読み取る通貨";
+"show_label" = "表示する通貨";
+"add_currency" = "通貨を追加";
+"primary_tag" = "メイン";
+"done_button" = "完了";
+"rates_label" = "レート：";
+"rate_source_live" = "最新";
+"rate_source_cached" = "保存済み";
+"rate_source_offline" = "オフライン · 内蔵";

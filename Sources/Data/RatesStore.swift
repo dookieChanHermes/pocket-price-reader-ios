@@ -41,8 +41,21 @@ final class RatesStore: ObservableObject {
     private static let endpoint = URL(string: "https://open.er-api.com/v6/latest/USD")!
     private static let fallback = Rates(map: Rates.fallbackMap, whenLabel: "bundled estimate")
 
+    /// Freshness of the rates currently in use (drives the localised source label).
+    enum RateSource { case offline, cached, live }
+
     @Published private(set) var current: Rates = RatesStore.fallback
-    @Published private(set) var source: String = "offline · bundled"
+    @Published private(set) var sourceKind: RateSource = .offline
+    @Published private(set) var sourceStamp: String = ""
+
+    /// Localised "source" label, e.g. "live · 2:00 PM" / "ライブ · 14:00".
+    var source: String {
+        switch sourceKind {
+        case .offline: return String(localized: "rate_source_offline")
+        case .cached: return "\(String(localized: "rate_source_cached")) · \(sourceStamp)"
+        case .live: return "\(String(localized: "rate_source_live")) · \(sourceStamp)"
+        }
+    }
 
     private init() {}
 
@@ -52,7 +65,8 @@ final class RatesStore: ObservableObject {
         guard let data = UserDefaults.standard.data(forKey: Self.key),
               let cached = try? JSONDecoder().decode(Rates.self, from: data) else { return }
         current = cached
-        source = "cached · \(cached.whenLabel)"
+        sourceKind = .cached
+        sourceStamp = cached.whenLabel
     }
 
     /// FR-6..8: best-effort live refresh; persist + mark source on success. Never throws.
@@ -76,11 +90,15 @@ final class RatesStore: ObservableObject {
             }
             await MainActor.run {
                 self.current = next
-                self.source = "live · \(stamp)"
+                self.sourceKind = .live
+                self.sourceStamp = stamp
             }
         } catch {
             await MainActor.run {
-                if !self.source.hasPrefix("cached") { self.source = "offline · bundled" }
+                if self.sourceKind != .cached {
+                    self.sourceKind = .offline
+                    self.sourceStamp = ""
+                }
             }
         }
     }
@@ -95,7 +113,6 @@ final class RatesStore: ObservableObject {
     #if DEBUG
     func _setForTesting(_ r: Rates) {
         current = r
-        source = "test"
     }
     static var _bundledFallback: Rates { fallback }
     #endif

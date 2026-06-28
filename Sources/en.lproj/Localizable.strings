@@ -1,0 +1,19 @@
+/* Pocket Price Reader — base (English) strings */
+
+"scan_mode" = "🌸 Scan a tag";
+"type_mode" = "Type it";
+"hint_scan" = "Point at a price tag and hold steady";
+"perm_title" = "Let Petal peek through the camera";
+"perm_body" = "Petal reads price tags live and converts them on the spot. Nothing is saved or sent anywhere.";
+"perm_button" = "Turn on camera";
+"no_camera" = "No camera here, so let’s type the price instead.";
+"today_rate_suffix" = "at today’s rate";
+"reading_label" = "Reading";
+"show_label" = "Show in";
+"add_currency" = "Add a currency";
+"primary_tag" = "primary";
+"done_button" = "Done";
+"rates_label" = "rates:";
+"rate_source_live" = "live";
+"rate_source_cached" = "cached";
+"rate_source_offline" = "offline · bundled";

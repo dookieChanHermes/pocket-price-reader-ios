@@ -1,0 +1,19 @@
+/* Pocket Price Reader — Traditional Chinese */
+
+"scan_mode" = "🌸 掃描價錢牌";
+"type_mode" = "手動輸入";
+"hint_scan" = "對準價錢牌，保持穩定";
+"perm_title" = "讓 Petal 透過鏡頭看一看";
+"perm_body" = "Petal 會即時讀取價錢牌並馬上換算，不會儲存，也不會上傳任何資料。";
+"perm_button" = "開啟相機";
+"no_camera" = "這裡沒有相機，那就改用手動輸入吧。";
+"today_rate_suffix" = "以今日匯率計";
+"reading_label" = "正在讀取";
+"show_label" = "換算成";
+"add_currency" = "新增貨幣";
+"primary_tag" = "主要";
+"done_button" = "完成";
+"rates_label" = "匯率：";
+"rate_source_live" = "即時";
+"rate_source_cached" = "已快取";
+"rate_source_offline" = "離線 · 內建";

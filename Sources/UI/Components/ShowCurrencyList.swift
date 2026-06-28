@@ -28,7 +28,7 @@ struct ShowCurrencyList: View {
             // tap to change this slot's currency
             Menu {
                 ForEach(Currencies.all) { c in
-                    Button("\(Currencies.flag(c.code))  \(c.code) — \(c.name)") {
+                    Button("\(Currencies.flag(c.code))  \(c.code) — \(Currencies.displayName(c.code))") {
                         show = ShowList.setAt(show, index, c.code)
                     }
                 }
@@ -41,7 +41,7 @@ struct ShowCurrencyList: View {
             }
 
             if index == 0 {
-                Text("primary")
+                Text(Copy.primaryTag)
                     .font(.petal(11, .medium))
                     .foregroundColor(Tokens.primaryDeep)
                     .padding(.horizontal, 8).padding(.vertical, 3)
@@ -68,7 +68,7 @@ struct ShowCurrencyList: View {
         let remaining = Currencies.all.filter { !show.contains($0.code) }
         return Menu {
             ForEach(remaining) { c in
-                Button("\(Currencies.flag(c.code))  \(c.code) — \(c.name)") {
+                Button("\(Currencies.flag(c.code))  \(c.code) — \(Currencies.displayName(c.code))") {
                     show = ShowList.add(show, c.code)
                 }
             }

@@ -9,13 +9,13 @@ struct ReadCurrencyMenu: View {
     var body: some View {
         Menu {
             ForEach(Currencies.all) { c in
-                Button("\(Currencies.flag(c.code))  \(c.code) — \(c.name)") { value = c.code }
+                Button("\(Currencies.flag(c.code))  \(c.code) — \(Currencies.displayName(c.code))") { value = c.code }
             }
         } label: {
             HStack(spacing: 8) {
                 Text(Currencies.flag(value)).font(.system(size: 18))
                 Text(value).font(.petal(16, .medium)).foregroundColor(Tokens.textPrimary)
-                Text(Currencies.name(value)).font(.petal(13)).foregroundColor(Tokens.textDim).lineLimit(1)
+                Text(Currencies.displayName(value)).font(.petal(13)).foregroundColor(Tokens.textDim).lineLimit(1)
                 Spacer(minLength: 4)
                 Image(systemName: "chevron.down").font(.system(size: 12)).foregroundColor(Tokens.textDim)
             }

@@ -1,0 +1,19 @@
+/* Pocket Price Reader — Simplified Chinese */
+
+"scan_mode" = "🌸 扫一扫价签";
+"type_mode" = "手动输入";
+"hint_scan" = "对准价签，拿稳一点";
+"perm_title" = "让 Petal 透过相机看一眼";
+"perm_body" = "Petal 会实时识别价签并马上帮你换算，所有内容都不保存、不上传。";
+"perm_button" = "开启相机";
+"no_camera" = "这里没有可用的相机，那就手动输入价格吧。";
+"today_rate_suffix" = "按今日汇率";
+"reading_label" = "识别货币";
+"show_label" = "换算为";
+"add_currency" = "添加货币";
+"primary_tag" = "主显";
+"done_button" = "完成";
+"rates_label" = "汇率：";
+"rate_source_live" = "实时";
+"rate_source_cached" = "缓存";
+"rate_source_offline" = "离线 · 内置";

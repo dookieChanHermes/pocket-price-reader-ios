@@ -40,18 +40,22 @@ extension Font {
     }
 }
 
-/// Centralised UI copy (warm, playful, short).
+/// Centralised, localised UI copy (warm, playful, short). Each value resolves from
+/// Localizable.strings for the active language (en base + ja / zh-Hans / zh-Hant).
 enum Copy {
-    static let scanMode = "🌸 Scan a tag"
-    static let typeMode = "Type it"
-    static let hintScan = "Point at a price tag and hold steady"
-    static let permTitle = "Let Petal peek through the camera"
-    static let permBody = "Petal reads price tags live and converts them on the spot. Nothing is saved or sent anywhere."
-    static let permButton = "Turn on camera"
-    static let noCamera = "No camera here, so let’s type the price instead."
-    static let todayRateSuffix = "at today’s rate"
-    static let readingLabel = "Reading"
-    static let showLabel = "Show in"
-    static let addCurrency = "Add a currency"
+    static var scanMode: String { String(localized: "scan_mode") }
+    static var typeMode: String { String(localized: "type_mode") }
+    static var hintScan: String { String(localized: "hint_scan") }
+    static var permTitle: String { String(localized: "perm_title") }
+    static var permBody: String { String(localized: "perm_body") }
+    static var permButton: String { String(localized: "perm_button") }
+    static var noCamera: String { String(localized: "no_camera") }
+    static var todayRateSuffix: String { String(localized: "today_rate_suffix") }
+    static var readingLabel: String { String(localized: "reading_label") }
+    static var showLabel: String { String(localized: "show_label") }
+    static var addCurrency: String { String(localized: "add_currency") }
+    static var primaryTag: String { String(localized: "primary_tag") }
+    static var doneButton: String { String(localized: "done_button") }
+    static var ratesLabel: String { String(localized: "rates_label") }
     static let emptyDash = "—"
 }

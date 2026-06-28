@@ -100,7 +100,7 @@ struct RootView: View {
                 ShowCurrencyList(show: showBinding)
             }
 
-            Text("rates: \(rates.source)")
+            Text("\(Copy.ratesLabel) \(rates.source)")
                 .font(.petal(11))
                 .foregroundColor(Tokens.textDim)
                 .frame(maxWidth: .infinity)
