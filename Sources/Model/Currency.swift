@@ -34,11 +34,11 @@ enum Currencies {
         Currency(code: "MXN", symbol: "Mex$", name: "Mexican Peso"),
     ]
 
-    /// Read (scanned) currencies — limited to those with reliable on-device OCR scripts.
-    static let readCodes = ["JPY", "CNY", "HKD"]
-
     static func symbol(_ code: String) -> String {
         all.first { $0.code == code }?.symbol ?? code
+    }
+    static func name(_ code: String) -> String {
+        all.first { $0.code == code }?.name ?? code
     }
 
     /// Flag emoji for a cute touch in the picker / show-list.

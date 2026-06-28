@@ -85,7 +85,7 @@ struct RootView: View {
 
             VStack(alignment: .leading, spacing: 6) {
                 sectionLabel(Copy.readingLabel)
-                ReadSegment(value: $readCode)
+                ReadCurrencyMenu(value: $readCode)
             }
 
             VStack(alignment: .leading, spacing: 6) {

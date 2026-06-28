@@ -1,31 +1,30 @@
 import SwiftUI
 
-/// Read-currency selector (the currency on the tag; drives OCR). 3 options (FR-14, FR-20).
-struct ReadSegment: View {
+/// Read-currency picker (the currency on the tag; drives OCR). Any currency is allowed —
+/// JPY uses the Japanese recognizer, CNY the Chinese one, everything else Latin (which
+/// reads the Arabic numerals on virtually all price tags). FR-14 / FR-20.
+struct ReadCurrencyMenu: View {
     @Binding var value: String
 
-    private func label(_ code: String) -> String {
-        "\(Currencies.flag(code)) \(code)"
-    }
-
     var body: some View {
-        HStack(spacing: 6) {
-            ForEach(Currencies.readCodes, id: \.self) { code in
-                let on = code == value
-                Button(action: { value = code }) {
-                    Text(label(code))
-                        .font(.petal(15, .medium))
-                        .foregroundColor(on ? Tokens.onPrimary : Tokens.textDim)
-                        .frame(maxWidth: .infinity, minHeight: 44)
-                        .background(on ? Tokens.primary : Color.clear)
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                }
-                .accessibilityIdentifier("read-\(code)")
+        Menu {
+            ForEach(Currencies.all) { c in
+                Button("\(Currencies.flag(c.code))  \(c.code) — \(c.name)") { value = c.code }
             }
+        } label: {
+            HStack(spacing: 8) {
+                Text(Currencies.flag(value)).font(.system(size: 18))
+                Text(value).font(.petal(16, .medium)).foregroundColor(Tokens.textPrimary)
+                Text(Currencies.name(value)).font(.petal(13)).foregroundColor(Tokens.textDim).lineLimit(1)
+                Spacer(minLength: 4)
+                Image(systemName: "chevron.down").font(.system(size: 12)).foregroundColor(Tokens.textDim)
+            }
+            .padding(.horizontal, 14)
+            .frame(maxWidth: .infinity, minHeight: 46)
+            .background(Tokens.surface)
+            .overlay(RoundedRectangle(cornerRadius: 14).stroke(Tokens.line, lineWidth: 1))
+            .clipShape(RoundedRectangle(cornerRadius: 14))
         }
-        .padding(5)
-        .background(Tokens.surface)
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Tokens.line, lineWidth: 1))
-        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .accessibilityIdentifier("read-currency")
     }
 }
