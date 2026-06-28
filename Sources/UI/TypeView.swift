@@ -5,9 +5,11 @@ import SwiftUI
 struct TypeView: View {
     let readCode: String
     let showCodes: [String]
+    @Binding var keyboardUp: Bool
 
     @ObservedObject private var rates = RatesStore.shared
     @State private var text: String = ProcessInfo.processInfo.environment["PPR_UITEST_VALUE"] ?? ""
+    @FocusState private var focused: Bool
 
     private var value: Double? { Double(text) }
 
@@ -24,6 +26,7 @@ struct TypeView: View {
                     .monospacedDigit()
                     .foregroundColor(Tokens.textPrimary)
                     .tint(Tokens.primary)
+                    .focused($focused)
                     .onChange(of: text) { _, newValue in
                         // ASCII digits only (matches Android's Char.isDigit); rejects ½, ², etc.
                         text = newValue.filter { ($0.isASCII && $0.isNumber) || $0 == "." }
@@ -44,6 +47,23 @@ struct TypeView: View {
         .padding(24)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Tokens.typeBg)
+        // Tap anywhere off the field to dismiss the number pad (it has no return key).
+        .contentShape(Rectangle())
+        .onTapGesture { focused = false }
+        .onChange(of: focused) { _, isFocused in keyboardUp = isFocused }
+        .onDisappear { keyboardUp = false }
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("Done") { focused = false }
+                    .foregroundColor(Tokens.primaryDeep)
+            }
+        }
+        .onAppear {
+            if ProcessInfo.processInfo.environment["PPR_UITEST_FOCUS"] == "1" {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { focused = true }
+            }
+        }
     }
 }
 

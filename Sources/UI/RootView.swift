@@ -11,6 +11,7 @@ private func uiTestEnv(_ key: String) -> String? {
 /// and flows down (spec §5).
 struct RootView: View {
     @State private var mode: Mode = Self.initialMode
+    @State private var keyboardUp = false
     @StateObject private var rates = RatesStore.shared
 
     @AppStorage("readCode") private var readCode: String = "JPY"   // FR-3
@@ -30,13 +31,19 @@ struct RootView: View {
             ZStack {
                 switch mode {
                 case .scan: ScannerView(readCode: readCode, showCodes: showCodes)
-                case .type: TypeView(readCode: readCode, showCodes: showCodes)
+                case .type: TypeView(readCode: readCode, showCodes: showCodes, keyboardUp: $keyboardUp)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .ignoresSafeArea(.container, edges: .top)
+            // Only the full-bleed camera extends under the status bar / Dynamic Island;
+            // the Type screen respects the top safe area so its content is never clipped.
+            .ignoresSafeArea(.container, edges: mode == .scan ? .top : [])
 
-            bottomPanel
+            // While typing, the keyboard covers the controls anyway — hide the (tall) panel
+            // so the input + conversions sit comfortably above the keyboard, never clipped.
+            if !(mode == .type && keyboardUp) {
+                bottomPanel
+            }
         }
         .background(Tokens.panelBg.ignoresSafeArea())
         // Light app appearance (the panel/Type are light); status bar is forced to dark
