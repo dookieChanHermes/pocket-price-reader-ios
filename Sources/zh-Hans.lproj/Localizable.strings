@@ -17,3 +17,4 @@
 "rate_source_live" = "实时";
 "rate_source_cached" = "缓存";
 "rate_source_offline" = "离线 · 内置";
+"rate_attribution" = "汇率数据来自 Exchange Rate API";

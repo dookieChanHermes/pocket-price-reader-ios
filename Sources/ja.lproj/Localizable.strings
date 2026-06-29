@@ -17,3 +17,4 @@
 "rate_source_live" = "最新";
 "rate_source_cached" = "保存済み";
 "rate_source_offline" = "オフライン · 内蔵";
+"rate_attribution" = "レート提供：Exchange Rate API";

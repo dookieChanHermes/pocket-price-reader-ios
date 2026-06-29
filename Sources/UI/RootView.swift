@@ -100,11 +100,17 @@ struct RootView: View {
                 ShowCurrencyList(show: showBinding)
             }
 
-            Text("\(Copy.ratesLabel) \(rates.source)")
-                .font(.petal(11))
-                .foregroundColor(Tokens.textDim)
-                .frame(maxWidth: .infinity)
-                .multilineTextAlignment(.center)
+            VStack(spacing: 2) {
+                Text("\(Copy.ratesLabel) \(rates.source)")
+                    .font(.petal(11))
+                    .foregroundColor(Tokens.textDim)
+                Link(Copy.rateAttribution,
+                     destination: URL(string: "https://www.exchangerate-api.com")!)
+                    .font(.petal(11))
+                    .foregroundColor(Tokens.textDim)
+            }
+            .frame(maxWidth: .infinity)
+            .multilineTextAlignment(.center)
         }
         .padding(16)
         .background(Tokens.panelBg)

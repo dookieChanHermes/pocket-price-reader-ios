@@ -57,5 +57,6 @@ enum Copy {
     static var primaryTag: String { String(localized: "primary_tag") }
     static var doneButton: String { String(localized: "done_button") }
     static var ratesLabel: String { String(localized: "rates_label") }
+    static var rateAttribution: String { String(localized: "rate_attribution") }
     static let emptyDash = "—"
 }
