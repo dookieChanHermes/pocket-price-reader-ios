@@ -25,6 +25,8 @@ targets:
       path: Sources/Info.plist
       properties:
         CFBundleDisplayName: Petal
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         UILaunchScreen:
           UIColorName: ""
         UIRequiresFullScreen: true
