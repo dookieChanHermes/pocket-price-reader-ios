@@ -112,3 +112,7 @@ spec change to make explicitly.
   label (AC-4 / FR-10), and Type-mode conversion (`1500 → $9.28` at the live rate,
   AC-1) reacting to the live refresh (FR-5/FR-21).
 - Real OCR on physical price tags requires a device (the simulator has no camera).
+
+## License
+
+MIT — see [LICENSE](LICENSE). © 2026 Ka Ming Chan.
