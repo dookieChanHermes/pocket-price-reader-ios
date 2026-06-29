@@ -8,6 +8,7 @@ import Combine
 struct ScannerView: View {
     let readCode: String
     let showCodes: [String]
+    var onCorrect: (Double) -> Void = { _ in }
 
     @StateObject private var scanner = PriceScanner()
     @ObservedObject private var rates = RatesStore.shared
@@ -74,7 +75,7 @@ struct ScannerView: View {
                 }
                 .frame(width: w, height: h)
 
-                // Overlays don't intercept taps, so they reach the camera for focusing.
+                // Non-interactive overlays — taps pass through to the camera for focusing.
                 Group {
                     RoundedRectangle(cornerRadius: 18)
                         .stroke(Tokens.primary, lineWidth: 3)
@@ -82,13 +83,6 @@ struct ScannerView: View {
                         .position(x: w * 0.5, y: h * 0.50)
 
                     if let d = scanner.detected {
-                        OutlinedText.label(
-                            "\(Currencies.symbol(readCode))\(formatGrouped(d)) \(readCode)",
-                            font: .petal(15, .medium), color: Tokens.overlayText, radius: 1.2
-                        )
-                        .frame(width: w)
-                        .position(x: w * 0.5, y: h * 0.355)
-
                         Readout(conversions: shownConversions(amount: d, from: readCode, showCodes: showCodes))
                             .frame(width: w)
                             .position(x: w * 0.5, y: h * 0.72)
@@ -98,6 +92,25 @@ struct ScannerView: View {
                         .position(x: w * 0.5, y: h - 22)
                 }
                 .allowsHitTesting(false)
+
+                // The scanned price IS tappable: tap to fix an OCR mis-read (e.g. superscript
+                // cents read as whole digits) in Type mode, pre-filled with these digits.
+                if let d = scanner.detected {
+                    Button { onCorrect(d) } label: {
+                        VStack(spacing: 1) {
+                            OutlinedText.label(
+                                "\(Currencies.symbol(readCode))\(formatGrouped(d)) \(readCode)",
+                                font: .petal(15, .medium), color: Tokens.overlayText, radius: 1.2
+                            )
+                            OutlinedText.label(
+                                Copy.tapToEdit,
+                                font: .petal(11), color: Tokens.overlayText.opacity(0.9), radius: 1
+                            )
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .offset(y: -h * 0.145)
+                }
 
                 if let fp = focusPoint {
                     FocusRing().id(focusPulse).position(fp).allowsHitTesting(false)

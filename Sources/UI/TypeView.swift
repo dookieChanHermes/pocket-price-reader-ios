@@ -6,6 +6,7 @@ struct TypeView: View {
     let readCode: String
     let showCodes: [String]
     @Binding var keyboardUp: Bool
+    var initialText: String? = nil   // pre-filled when arriving via "tap the scanned price"
 
     @ObservedObject private var rates = RatesStore.shared
     @State private var text: String = ProcessInfo.processInfo.environment["PPR_UITEST_VALUE"] ?? ""
@@ -60,7 +61,12 @@ struct TypeView: View {
             }
         }
         .onAppear {
-            if ProcessInfo.processInfo.environment["PPR_UITEST_FOCUS"] == "1" {
+            // Arrived by tapping a scanned price: seed the digits and raise the keypad so the
+            // user can insert the missing decimal point right away.
+            if let initial = initialText, !initial.isEmpty {
+                text = initial
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { focused = true }
+            } else if ProcessInfo.processInfo.environment["PPR_UITEST_FOCUS"] == "1" {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { focused = true }
             }
         }

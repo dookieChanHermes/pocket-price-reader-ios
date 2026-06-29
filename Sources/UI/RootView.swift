@@ -12,6 +12,7 @@ private func uiTestEnv(_ key: String) -> String? {
 struct RootView: View {
     @State private var mode: Mode = Self.initialMode
     @State private var keyboardUp = false
+    @State private var prefill: String? = nil   // scanned digits handed to Type mode for correction
     @StateObject private var rates = RatesStore.shared
 
     @AppStorage("readCode") private var readCode: String = "JPY"   // FR-3
@@ -30,8 +31,14 @@ struct RootView: View {
         VStack(spacing: 0) {
             ZStack {
                 switch mode {
-                case .scan: ScannerView(readCode: readCode, showCodes: showCodes)
-                case .type: TypeView(readCode: readCode, showCodes: showCodes, keyboardUp: $keyboardUp)
+                case .scan:
+                    ScannerView(readCode: readCode, showCodes: showCodes) { detected in
+                        prefill = Self.numericString(detected)   // tap the scanned price to fix it
+                        mode = .type
+                    }
+                case .type:
+                    TypeView(readCode: readCode, showCodes: showCodes,
+                             keyboardUp: $keyboardUp, initialText: prefill)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -61,6 +68,13 @@ struct RootView: View {
         uiTestEnv("PPR_UITEST_MODE") == "type" ? .type : .scan
     }
 
+    /// Clean numeric string to pre-fill Type mode from a scanned value (e.g. 1399.0 -> "1399"),
+    /// so the user can drop in a missing decimal point in one tap.
+    static func numericString(_ d: Double) -> String {
+        if d == d.rounded() && abs(d) < 1e15 { return String(Int(d)) }
+        return String(d)
+    }
+
     /// One-time migration from the v1.1 per-slot keys (show1/show2/show3) to the v1.2
     /// ordered "showOrder", and canonicalize the stored string so it always matches the
     /// displayed (sanitized) list.
@@ -87,7 +101,8 @@ struct RootView: View {
         VStack(spacing: 14) {
             HStack(spacing: 8) {
                 ModeButton(label: Copy.scanMode, on: mode == .scan) { mode = .scan }
-                ModeButton(label: Copy.typeMode, on: mode == .type) { mode = .type }
+                // Manual Type starts empty; the pre-filled path is the scanned-price tap.
+                ModeButton(label: Copy.typeMode, on: mode == .type) { prefill = nil; mode = .type }
             }
 
             VStack(alignment: .leading, spacing: 6) {
